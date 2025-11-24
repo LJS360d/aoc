@@ -20,6 +20,9 @@ fn part2(input: &str) {
     let lines = input.lines();
 
     for line in lines {
+        let (e1, e2) = line.split_once(',').unwrap();
+        let (e1s1, e1s2) = e1.split_once('-').unwrap();
+        let (e2s1, e2s2) = e2.split_once('-').unwrap();
         let mut chars = line.chars();
     }
 }
