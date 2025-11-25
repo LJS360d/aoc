@@ -2,8 +2,8 @@
 /// https://adventofcode.com/2022/day/7
 fn main() {
     let input = include_str!("./input.txt");
-    part1(&input);
-    // part2(&input);
+    // part1(&input);
+    part2(&input);
 }
 
 pub type NodeId = usize;
@@ -52,15 +52,13 @@ impl ArenaTree {
 
     fn print_node(&self, id: NodeId, depth: usize) {
         let node = &self.nodes[id];
-        if node.size(self) <= 100000 {
-            println!(
-                "{:indent$}{} ({})",
-                "",
-                node.name,
-                node.size(self),
-                indent = depth * 2
-            );
-        }
+        println!(
+            "{:indent$}{} ({})",
+            "",
+            node.name,
+            node.size(self),
+            indent = depth * 2
+        );
 
         for &child_id in &node.children {
             self.print_node(child_id, depth + 1);
@@ -101,11 +99,13 @@ impl Node {
 }
 
 #[allow(unused)]
+#[allow(unused)]
 fn part1(input: &str) {
     let lines = input.lines();
 
     let mut tree = ArenaTree::new();
-    let mut cwd = tree.add(String::from("/"), FileOrDir::Directory, None);
+    let mut cwd: NodeId = tree.add(String::from("/"), FileOrDir::Directory, None);
+
     for line in lines.skip(1) {
         if line.starts_with("$ cd") {
             let dir = line.chars().skip(5).collect::<String>();
@@ -115,70 +115,141 @@ fn part1(input: &str) {
                     Some(parent) => cwd = parent,
                     None => {}
                 }
-                continue;
-            }
-            let children_dirs = tree
-                .nodes
-                .get(cwd)
-                .unwrap()
-                .children
-                .clone()
-                .iter()
-                .filter_map(|node| {
-                    if matches!(tree.nodes.get(*node).unwrap().data, FileOrDir::Directory) {
-                        Some(*node)
-                    } else {
-                        None
+            } else {
+                let mut found = false;
+                for &child_id in &cwd_node.children {
+                    if tree.nodes[child_id].name == dir {
+                        cwd = child_id;
+                        found = true;
+                        break;
                     }
-                })
-                .collect::<Vec<_>>();
-
-            for child in children_dirs.into_iter() {
-                let node = tree.nodes.get(child).unwrap();
-                if node.name == dir {
-                    cwd = child;
-                    break;
+                }
+                if !found {
+                    // NTD
                 }
             }
         } else if line.starts_with("$ ls") {
             // well... we need to process the next lines here
             continue;
         } else if line.starts_with("dir ") {
-            let dir = line.chars().skip(4).collect::<String>();
-            match tree.nodes.iter().find(|node| node.name == dir) {
-                Some(folder) => {}
-                None => {
-                    tree.add(dir, FileOrDir::Directory, Some(cwd));
-                }
+            let dir_name = line.chars().skip(4).collect::<String>();
+
+            let cwd_children = &tree.nodes[cwd].children;
+            let already_exists = cwd_children.iter().any(|&child_id| {
+                tree.nodes[child_id].name == dir_name
+                    && matches!(tree.nodes[child_id].data, FileOrDir::Directory)
+            });
+
+            if !already_exists {
+                tree.add(dir_name, FileOrDir::Directory, Some(cwd));
             }
         } else {
-            // line has file entry
             let (size_str, name) = line.split_once(" ").unwrap();
             let size = size_str.parse::<u64>().unwrap();
-            tree.add(
-                String::from(name),
-                FileOrDir::File { size: size },
-                Some(cwd),
-            );
+
+            let file_name = String::from(name);
+            let cwd_children = &tree.nodes[cwd].children;
+            let already_exists = cwd_children.iter().any(|&child_id| {
+                tree.nodes[child_id].name == file_name
+                    && matches!(tree.nodes[child_id].data, FileOrDir::File { .. })
+            });
+
+            if !already_exists {
+                tree.add(file_name, FileOrDir::File { size }, Some(cwd));
+            }
         }
     }
-    tree.print();
-    println!(
-        "{:?}",
-        tree.dirs_under_100000()
-            .iter()
-            .map(|d| d.size(&tree))
-            .collect::<Vec<u64>>()
-            .iter()
-            .sum::<u64>()
-    );
+
+    let result: u64 = tree
+        .nodes
+        .iter()
+        .filter_map(|node| {
+            if matches!(node.data, FileOrDir::Directory) {
+                let size = node.size(&tree);
+                if size <= 100000 { Some(size) } else { None }
+            } else {
+                None
+            }
+        })
+        .sum();
+
+    println!("{}", result);
 }
 
 #[allow(unused)]
 fn part2(input: &str) {
     let lines = input.lines();
 
-    for line in lines {
-        let mut chars = line.chars();
+    let mut tree = ArenaTree::new();
+    let mut cwd: NodeId = tree.add(String::from("/"), FileOrDir::Directory, None);
+
+    for line in lines.skip(1) {
+        if line.starts_with("$ cd") {
+            let dir = line.chars().skip(5).collect::<String>();
+            let cwd_node = tree.nodes.get(cwd).unwrap();
+            if dir == ".." {
+                match cwd_node.parent {
+                    Some(parent) => cwd = parent,
+                    None => {}
+                }
+            } else {
+                let mut found = false;
+                for &child_id in &cwd_node.children {
+                    if tree.nodes[child_id].name == dir {
+                        cwd = child_id;
+                        found = true;
+                        break;
+                    }
+                }
+                if !found {
+                    // NTD
+                }
+            }
+        } else if line.starts_with("$ ls") {
+            // well... we need to process the next lines here
+            continue;
+        } else if line.starts_with("dir ") {
+            let dir_name = line.chars().skip(4).collect::<String>();
+
+            let cwd_children = &tree.nodes[cwd].children;
+            let already_exists = cwd_children.iter().any(|&child_id| {
+                tree.nodes[child_id].name == dir_name
+                    && matches!(tree.nodes[child_id].data, FileOrDir::Directory)
+            });
+
+            if !already_exists {
+                tree.add(dir_name, FileOrDir::Directory, Some(cwd));
+            }
+        } else {
+            let (size_str, name) = line.split_once(" ").unwrap();
+            let size = size_str.parse::<u64>().unwrap();
+
+            let file_name = String::from(name);
+            let cwd_children = &tree.nodes[cwd].children;
+            let already_exists = cwd_children.iter().any(|&child_id| {
+                tree.nodes[child_id].name == file_name
+                    && matches!(tree.nodes[child_id].data, FileOrDir::File { .. })
+            });
+
+            if !already_exists {
+                tree.add(file_name, FileOrDir::File { size }, Some(cwd));
+            }
+        }
     }
+
+    let total_space: u64 = 70000000;
+    let required_space: u64 = 30000000;
+    let unused_space = total_space - tree.nodes.get(0).unwrap().size(&tree);
+    let free_target = required_space - unused_space;
+
+    let mut result = total_space;
+    for node in &tree.nodes {
+        if matches!(node.data, FileOrDir::Directory) {
+            let size = node.size(&tree);
+            if free_target <= size && result > size {
+                result = size;
+            }
+        }
+    }
+    println!("{}", result);
 }
