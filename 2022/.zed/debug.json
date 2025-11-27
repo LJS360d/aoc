@@ -5,11 +5,11 @@
 [
   {
     "adapter": "CodeLLDB",
-    "label": "cargo run --bin day12",
+    "label": "cargo run --bin day13",
     "build": {
-      "label": "cargo run --bin day12",
+      "label": "cargo run --bin day13",
       "command": "cargo",
-      "args": ["run", "--bin", "day12"],
+      "args": ["run", "--bin", "day13"],
       "env": {
         "RUSTC_TOOLCHAIN": "/home/luca/.rustup/toolchains/1.91.1-x86_64-unknown-linux-gnu"
       },
