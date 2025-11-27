@@ -1,14 +1,14 @@
-use std::num::ParseIntError;
+use std::{cmp::Ordering, num::ParseIntError};
 
 /// Advent of Code 2022 - Day 13
 /// https://adventofcode.com/2022/day/13
 fn main() {
     let input = include_str!("./input.txt");
-    part1(&input);
-    // part2(&input);
+    // part1(&input);
+    part2(&input);
 }
 
-#[derive(Debug, Clone, PartialEq, Eq)]
+#[derive(Debug, Clone, PartialEq, Eq, Hash)]
 enum Packet {
     List(Vec<Packet>),
     Value(u32),
@@ -24,6 +24,19 @@ impl Packet {
         let result_list = Self::parse_list(&mut chars)?;
 
         Ok(Packet::List(result_list))
+    }
+
+    pub fn to_string(&self) -> String {
+        match self {
+            Packet::Value(v) => format!("{}", v),
+            Packet::List(l) => format!(
+                "[{}]",
+                l.iter()
+                    .map(|p| p.to_string())
+                    .collect::<Vec<String>>()
+                    .join(",")
+            ),
+        }
     }
 
     fn parse_list<I>(chars: &mut std::iter::Peekable<I>) -> Result<Vec<Packet>, ParseIntError>
@@ -130,9 +143,38 @@ fn part1(input: &str) {
 
 #[allow(unused)]
 fn part2(input: &str) {
-    let lines = input.lines();
-
-    for line in lines {
-        let mut chars = line.chars();
+    let mut packets: Vec<Packet> = vec![];
+    for (i, pairs) in input.split("\n\n").enumerate() {
+        let (p1_str, p2_str) = pairs.split_once('\n').unwrap();
+        let p1 = Packet::from_str(p1_str).unwrap();
+        let p2 = Packet::from_str(p2_str).unwrap();
+        packets.push(p1);
+        packets.push(p2);
     }
+    // add the divider packets
+    let div1_str = "[[2]]";
+    packets.push(Packet::from_str(div1_str).unwrap());
+    let div2_str = "[[6]]";
+    packets.push(Packet::from_str(div2_str).unwrap());
+
+    packets.sort_unstable_by(|a, b| {
+        if a.is_smaller_than(b) {
+            return Ordering::Less;
+        } else if b.is_smaller_than(a) {
+            return Ordering::Greater;
+        }
+        Ordering::Equal
+    });
+
+    let mut div1_idx: usize = 0;
+    let mut div2_idx: usize = 0;
+    for (i, str) in packets.iter().map(Packet::to_string).enumerate() {
+        if str == div1_str {
+            div1_idx = i + 1;
+        }
+        if str == div2_str {
+            div2_idx = i + 1;
+        }
+    }
+    println!("{}", div1_idx * div2_idx);
 }
