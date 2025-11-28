@@ -1,5 +1,3 @@
-use std::{thread::sleep, time::Duration};
-
 /// Advent of Code 2022 - Day 14
 /// https://adventofcode.com/2022/day/14
 fn main() {
@@ -8,7 +6,7 @@ fn main() {
     // part2(&input);
 }
 
-fn visualize(rocks: &Vec<(i32, i32)>, sand_origin: &(i32, i32), sand: &Vec<(i32, i32)>) {
+fn visualize(rocks: &Vec<Coords>, sand_origin: &Coords, sand: &Vec<Coords>) {
     let mut min_bounds = rocks
         .iter()
         .fold((i32::MAX, i32::MAX), |(min_x, min_y), (x, y)| {
@@ -23,8 +21,9 @@ fn visualize(rocks: &Vec<(i32, i32)>, sand_origin: &(i32, i32), sand: &Vec<(i32,
     let height = max_bounds.1 - min_bounds.1 + 1;
 
     print!("\x1b[2J\x1b[H");
-    for y in -1..height + 1 {
-        for x in -1..width + 1 {
+    let padding = 2;
+    for y in -padding..height + padding {
+        for x in -padding..width + padding {
             let c = (min_bounds.0 + x, min_bounds.1 + y);
             let at_sand_origin = c == *sand_origin;
             let at_rock = rocks.iter().any(|(rx, ry)| *rx == c.0 && *ry == c.1);
@@ -44,33 +43,86 @@ fn visualize(rocks: &Vec<(i32, i32)>, sand_origin: &(i32, i32), sand: &Vec<(i32,
     }
 }
 
-fn step(obs: Vec<(i32, i32)>, start_pos: &(i32, i32)) -> Option<(i32, i32)> {
-    // apply gravity until an obstacle is found -> same X as curr_pos, higher Y
-    let next_obs = match obs.iter().try_fold((0, 0), |(x, y)| *x == start_pos.0) {
-        Some(i) => i,
-        None => return None,
-    };
-    let down_left = (next_obs.0 - 1, next_obs.1);
-    if obs
-        .iter()
-        .any(|(x, y)| *x == down_left.0 && *y == down_left.1)
-    {
-        return Some(down_left);
+type Coords = (i32, i32);
+
+fn step(obstacles: &Vec<Coords>, start_pos: &Coords) -> Option<Coords> {
+    let next_obs = get_next_obstacle(&obstacles, start_pos);
+    if next_obs.is_none() {
+        return Some(*start_pos);
     }
-    let down_right = (next_obs.0 + 1, next_obs.1);
-    if obs
-        .iter()
-        .any(|(x, y)| *x == down_right.0 && *y == down_right.1)
-    {
-        return Some(down_right);
+    let next_obs = next_obs.unwrap();
+    if next_obs.1 == -1 {
+        return None;
     }
+
+    // left
+    let try_pos: Option<Coords> = Some((next_obs.0 - 1, next_obs.1));
+    let left_obs = get_next_obstacle(&obstacles, &try_pos.unwrap());
+    match left_obs {
+        None => {
+            // sand cannot be placed here
+        }
+        Some(pos) => {
+            if pos.1 == -1 {
+                return None;
+            }
+            let left_pos = (pos.0, pos.1 - 1);
+            return step(&obstacles, &left_pos);
+        }
+    }
+
+    // right
+    let try_pos = Some((next_obs.0 + 1, next_obs.1));
+    let right_obs = get_next_obstacle(&obstacles, &try_pos.unwrap());
+    match right_obs {
+        None => {
+            // sand cannot be placed here
+        }
+        Some(pos) => {
+            if pos.1 == -1 {
+                return None;
+            }
+            let right_pos = (pos.0, pos.1 - 1);
+            return step(&obstacles, &right_pos);
+        }
+    }
+
     return Some((next_obs.0, next_obs.1 - 1));
+}
+
+fn get_next_obstacle(obstacles: &Vec<Coords>, start_pos: &Coords) -> Option<Coords> {
+    let mut next_obs: Option<Coords> = None;
+    for obs in obstacles
+        .iter()
+        .filter(|(x, y)| *x == start_pos.0 && *y >= start_pos.1)
+    {
+        if obs.1 == start_pos.1 {
+            // the highest obstacle is directly on the start position
+            // sand cannot be placed there
+            return None;
+        }
+        if next_obs.is_none() || next_obs.unwrap().1 > obs.1 {
+            next_obs = Some(*obs);
+        }
+    }
+    let next_obs = match next_obs {
+        Some(n) => n,
+        // there are no obstacles under start_pos, so it falls into the void
+        None => return Some((-1, -1)),
+    };
+
+    // i now posses the highest obstacle that can be reached by the sand
+    // if next_obs.1 == (start_pos.1 - 1) {
+    //     // if its directly under the start pos, then the sand is blocked
+    //     return None;
+    // }
+    return Some(next_obs);
 }
 
 #[allow(unused)]
 fn part1(input: &str) {
     let lines = input.lines();
-    let mut rocks: Vec<(i32, i32)> = vec![];
+    let mut rocks: Vec<Coords> = vec![];
     for line in lines {
         let mut markers = line.split(" -> ").map(|s| {
             s.split_once(",")
@@ -108,21 +160,29 @@ fn part1(input: &str) {
             curr = next;
         }
     }
-    let sand_origin: (i32, i32) = (500, 0);
-    let mut sand: Vec<(i32, i32)> = Vec::new();
-    visualize(&rocks, &sand_origin, &sand);
+    let sand_origin: Coords = (500, 0);
+    let mut sand: Vec<Coords> = Vec::new();
+    // visualize(&rocks, &sand_origin, &sand);
     let mut obstacles = rocks.clone();
     loop {
-        let new_sand = match step(obstacles.clone(), &sand_origin) {
-            Some(s) => s,
-            None => break,
-        };
+        let new_sand = step(&obstacles, &sand_origin);
+        if new_sand.is_none() {
+            break;
+        }
+        let new_sand = new_sand.unwrap();
+        let latest_sand = sand.last();
+        match latest_sand {
+            None => {}
+            Some(s) => {
+                if s.1 == new_sand.1 && s.0 == new_sand.0 {
+                    break;
+                }
+            }
+        }
         sand.push(new_sand);
         obstacles.push(new_sand);
-        visualize(&rocks, &sand_origin, &sand);
-        println!("{}", sand.len());
-        sleep(Duration::new(0, 10_000_000));
     }
+    visualize(&rocks, &sand_origin, &sand);
     println!("{}", sand.len());
 }
 
