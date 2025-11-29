@@ -1,7 +1,4 @@
-use std::{
-    collections::{HashMap, HashSet},
-    ops::AddAssign,
-};
+use std::collections::HashSet;
 
 use regex::Regex;
 
@@ -15,47 +12,47 @@ fn main() {
 
 type Coords = (i32, i32);
 
-fn visualize(
-    exam_row_y: i32,
-    sensors: &Vec<Coords>,
-    beacons: &Vec<Coords>,
-    off_positions: &HashSet<i32>,
-) {
-    let mut all = sensors.clone();
-    all.extend(beacons);
-    let min_bounds = all
-        .iter()
-        .fold((i32::MAX, i32::MAX), |(min_x, min_y), (x, y)| {
-            (min_x.min(*x), min_y.min(*y))
-        });
-    let max_bounds = all.iter().fold((0, 0), |(max_x, max_y), (x, y)| {
-        (max_x.max(*x), max_y.max(*y))
-    });
+// fn visualize(
+//     exam_row_y: i32,
+//     sensors: &Vec<Coords>,
+//     beacons: &Vec<Coords>,
+//     off_positions: &HashSet<i32>,
+// ) {
+//     let mut all = sensors.clone();
+//     all.extend(beacons);
+//     let min_bounds = all
+//         .iter()
+//         .fold((i32::MAX, i32::MAX), |(min_x, min_y), (x, y)| {
+//             (min_x.min(*x), min_y.min(*y))
+//         });
+//     let max_bounds = all.iter().fold((0, 0), |(max_x, max_y), (x, y)| {
+//         (max_x.max(*x), max_y.max(*y))
+//     });
 
-    let width = (max_bounds.0 - min_bounds.0) + 1;
-    let height = (max_bounds.1 - min_bounds.1) + 1;
+//     let width = (max_bounds.0 - min_bounds.0) + 1;
+//     let height = (max_bounds.1 - min_bounds.1) + 1;
 
-    for y in min_bounds.1..=height {
-        print!("{:3} ", y);
-        for x in (min_bounds.0)..=width {
-            let c = (min_bounds.0 + x, min_bounds.1 + y);
-            let at_sensor = sensors.iter().any(|(rx, ry)| *rx == c.0 && *ry == c.1);
-            let at_beacon = beacons.iter().any(|(rx, ry)| *rx == c.0 && *ry == c.1);
-            let at_off = off_positions.iter().any(|rx| *rx == c.0) && c.1 == exam_row_y;
+//     for y in min_bounds.1..=height {
+//         print!("{:3} ", y);
+//         for x in (min_bounds.0)..=width {
+//             let c = (min_bounds.0 + x, min_bounds.1 + y);
+//             let at_sensor = sensors.iter().any(|(rx, ry)| *rx == c.0 && *ry == c.1);
+//             let at_beacon = beacons.iter().any(|(rx, ry)| *rx == c.0 && *ry == c.1);
+//             let at_off = off_positions.iter().any(|rx| *rx == c.0) && c.1 == exam_row_y;
 
-            if at_sensor {
-                print!("S");
-            } else if at_beacon {
-                print!("B");
-            } else if at_off {
-                print!("#");
-            } else {
-                print!(".");
-            }
-        }
-        println!();
-    }
-}
+//             if at_sensor {
+//                 print!("S");
+//             } else if at_beacon {
+//                 print!("B");
+//             } else if at_off {
+//                 print!("#");
+//             } else {
+//                 print!(".");
+//             }
+//         }
+//         println!();
+//     }
+// }
 
 fn manhattan_distance((x1, y1): Coords, (x2, y2): Coords) -> i32 {
     (x1 - x2).abs() + (y1 - y2).abs()
