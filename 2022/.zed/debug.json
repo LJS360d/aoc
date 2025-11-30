@@ -5,14 +5,14 @@
 [
   {
     "adapter": "CodeLLDB",
-    "label": "Debug day17",
-    "program": "/home/luca/Documents/adventofcode/2022/target/debug/day17",
+    "label": "Debug day18",
+    "program": "/home/luca/Documents/adventofcode/2022/target/debug/day18",
     "args": [], // Any command-line arguments you want to pass to your program
     "cwd": "/home/luca/Documents/adventofcode/2022",
     "build": {
-      "label": "cargo build --bin day17",
+      "label": "cargo build --bin day18",
       "command": "cargo",
-      "args": ["build", "--bin", "day17"],
+      "args": ["build", "--bin", "day18"],
       "env": {
         "RUSTC_TOOLCHAIN": "/home/luca/.rustup/toolchains/1.91.1-x86_64-unknown-linux-gnu"
       },
