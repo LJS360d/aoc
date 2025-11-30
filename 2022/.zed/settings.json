@@ -4,5 +4,6 @@
 // see the documentation: https://zed.dev/docs/configuring-zed#settings-files
 {
   "disable_ai": true,
-  "show_edit_predictions": true
+  "show_edit_predictions": true,
+  "ensure_final_newline_on_save": false
 }
