@@ -1,0 +1,9 @@
+[package]
+name = "aoc2025"
+version = "0.1.0"
+edition = "2024"
+
+[dependencies]
+ansi_term = "0.12.1"
+rand = "0.9.2"
+regex = "1.12.2"
