@@ -38,7 +38,7 @@ highest_day=${highest_day:-0}
 
 # Determine the next day number
 next_day=$((highest_day + 1))
-next_day=${1:-next_day}
+next_day=${1:-$next_day}
 day_dir="src/bin/day${next_day}"
 main_file="${day_dir}/main.rs"
 input_file="${day_dir}/input.txt"

@@ -1,8 +1,4 @@
-use std::{
-    collections::HashMap,
-    ops::{Add, AddAssign, SubAssign},
-    thread,
-};
+use std::{collections::HashMap, ops::AddAssign, thread};
 
 use regex::Regex;
 
@@ -26,7 +22,7 @@ struct Blueprint {
     geode_robot_cost: [u32; 2],
 }
 
-#[derive(Eq, Hash, PartialEq)]
+#[derive(Eq, Hash, PartialEq, Debug)]
 enum Resource {
     Ore,
     Clay,
@@ -62,24 +58,49 @@ impl Simulation {
     }
 
     fn produce_resources(&mut self) {
+        println!("producing {:?}", self.robots);
         for (resource, count) in self.resources.iter_mut() {
             *count += self.robots[resource];
         }
+        println!("resources {:?}", self.resources)
     }
 
     /// returns a vec of bought robots, mutates the resources
     fn spend_resources_optimally(&mut self, minute: u32, total_minutes: u32) -> Option<Resource> {
         let mut robot_to_build = None;
-        let ore = self.resources.get_mut(&Resource::Ore).unwrap();
-        let clay = self.resources.get_mut(&Resource::Clay).unwrap();
-        let obsidian = self.resources.get_mut(&Resource::Obsidian).unwrap();
 
-        if self.blueprint.geode_robot_cost[0] >= *ore
-            && self.blueprint.geode_robot_cost[1] >= *obsidian
+        let current_ore = *self.resources.get(&Resource::Ore).unwrap();
+        let current_clay = *self.resources.get(&Resource::Clay).unwrap();
+        let current_obsidian = *self.resources.get(&Resource::Obsidian).unwrap();
+
+        // Prioritize building geode robots
+        if current_ore >= self.blueprint.geode_robot_cost[0]
+            && current_obsidian >= self.blueprint.geode_robot_cost[1]
         {
-            ore.sub_assign(self.blueprint.geode_robot_cost[0]);
-            obsidian.sub_assign(self.blueprint.geode_robot_cost[1]);
+            *self.resources.get_mut(&Resource::Ore).unwrap() -= self.blueprint.geode_robot_cost[0];
+            *self.resources.get_mut(&Resource::Obsidian).unwrap() -=
+                self.blueprint.geode_robot_cost[1];
             robot_to_build = Some(Resource::Geode);
+        } else if current_ore >= self.blueprint.obsidian_robot_cost[0]
+            && current_clay >= self.blueprint.obsidian_robot_cost[1]
+        {
+            *self.resources.get_mut(&Resource::Ore).unwrap() -=
+                self.blueprint.obsidian_robot_cost[0];
+            *self.resources.get_mut(&Resource::Clay).unwrap() -=
+                self.blueprint.obsidian_robot_cost[1];
+            robot_to_build = Some(Resource::Obsidian);
+        } else if current_ore >= self.blueprint.clay_robot_cost
+            && (current_clay < self.blueprint.obsidian_robot_cost[1])
+        {
+            *self.resources.get_mut(&Resource::Ore).unwrap() -= self.blueprint.clay_robot_cost;
+            robot_to_build = Some(Resource::Clay);
+        } else if current_ore >= self.blueprint.ore_robot_cost
+            && (current_ore < self.blueprint.clay_robot_cost
+                && current_ore < self.blueprint.obsidian_robot_cost[0]
+                && current_ore < self.blueprint.geode_robot_cost[0])
+        {
+            *self.resources.get_mut(&Resource::Ore).unwrap() -= self.blueprint.ore_robot_cost;
+            robot_to_build = Some(Resource::Ore);
         }
 
         robot_to_build
@@ -87,11 +108,12 @@ impl Simulation {
 
     fn run_for(&mut self, minutes: u32) {
         for minute in 1..=minutes {
-            let robots = self.spend_resources_optimally(minute, minutes);
+            println!("Blueprint {}: Minute {minute}", self.blueprint.id);
+            let robot = self.spend_resources_optimally(minute, minutes);
             self.produce_resources();
-            for robot in robots {
-                let production = self.robots.get_mut(&robot).unwrap();
-                production.add_assign(1);
+            match robot {
+                Some(resource) => self.robots.get_mut(&resource).unwrap().add_assign(1),
+                None => {}
             }
         }
     }
@@ -123,26 +145,42 @@ fn part1(input: &str) {
         simulations.push(Simulation::new(blueprint));
     }
 
-    let mut handles = vec![];
-    for sim in simulations {
-        handles.push(thread::spawn(move || {
-            let mut sim = sim;
-            sim.run_for(24);
-            sim
-        }));
-    }
-    let mut final_simulations = vec![];
+    // Multi-threaded version
+    // let mut handles = vec![];
+    // for sim in simulations {
+    //     handles.push(thread::spawn(move || {
+    //         let mut sim = sim;
+    //         sim.run_for(24);
+    //         sim
+    //     }));
+    // }
+    // let mut final_simulations = vec![];
 
-    for handle in handles {
-        match handle.join() {
-            Ok(sim_result) => {
-                final_simulations.push(sim_result);
-            }
-            Err(e) => {
-                eprintln!("A thread panicked and failed to join: {:?}", e);
-            }
-        }
+    // for handle in handles {
+    //     match handle.join() {
+    //         Ok(sim_result) => {
+    //             final_simulations.push(sim_result);
+    //         }
+    //         Err(e) => {
+    //             eprintln!("A thread panicked and failed to join: {:?}", e);
+    //         }
+    //     }
+    // }
+
+    // Sync version
+    for sim in simulations.iter_mut() {
+        sim.run_for(24);
+        println!("");
+        println!("---------------");
+        println!("");
     }
+
+    println!(
+        "{}",
+        simulations.iter().fold(0, |acc, sim| {
+            return acc + (sim.blueprint.id * sim.resources.get(&Resource::Geode).unwrap());
+        })
+    )
 }
 
 #[allow(unused)]
