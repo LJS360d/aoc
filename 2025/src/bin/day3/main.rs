@@ -53,15 +53,24 @@ fn part2(input: &str) {
             let max_index: usize = 0;
             let to = (batteries.len() + 1 - start_index) - (BATTERIES_AMOUNT - joltage_vec.len());
             let search_vec = batteries[start_index..(start_index + to)].to_vec();
-            println!("{line} , searching for max in {:?}, from: {start_index}, to: {to}", search_vec);
+            println!(
+                "{line} , searching for max in {:?}, from: {start_index}, to: {to}",
+                search_vec
+            );
+            let mut used_index = 0;
             for (ii, battery) in search_vec.into_iter().enumerate() {
                 if max < battery {
                     max = battery;
-                    start_index = ii;
+                    used_index = ii;
                 }
             }
+            start_index += used_index;
             joltage_vec.push(max as usize);
-            println!("max ({max}) is at {start_index}, {} numbers available left, {} more numbers are necessary", batteries.len() + 1 - start_index, BATTERIES_AMOUNT - joltage_vec.len());
+            println!(
+                "max ({max}) is at {start_index}, {} numbers available left, {} more numbers are necessary",
+                batteries.len() + 1 - start_index,
+                BATTERIES_AMOUNT - joltage_vec.len()
+            );
             start_index += 1;
         }
         println!("{joltage_vec:?}");
@@ -70,7 +79,7 @@ fn part2(input: &str) {
             .iter()
             .enumerate()
             .map(|(i, n)| {
-                let mul: u64 =  10_u64.pow((joltage_vec.len() - i - 1) as u32);
+                let mul: u64 = 10_u64.pow((joltage_vec.len() - i - 1) as u32);
                 return (*n as u64) * mul;
             })
             .sum::<u64>();

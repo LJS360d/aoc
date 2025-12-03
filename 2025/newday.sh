@@ -47,7 +47,9 @@ input_file="${day_dir}/input.txt"
 mkdir -p "$day_dir"
 
 # Create es1.go and es2.go files with boilerplate code
-boilerplate_code "$next_day" >"$main_file"
+if [ ! -f "$main_file" ]; then
+    boilerplate_code "$next_day" >"$main_file"
+fi
 
 # Fetch input.txt using curl
 if [[ -f "$input_file" ]]; then
