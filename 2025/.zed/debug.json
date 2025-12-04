@@ -4,29 +4,23 @@
 // see: https://zed.dev/docs/debugger
 [
   {
-    "request": "attach",
+    "request": "launch",
     "adapter": "CodeLLDB",
-    "label": "Debug day3",
-    "program": "/home/luca/Documents/adventofcode/2022/target/debug/day3",
+    "label": "Debug day4",
     "args": [], // Any command-line arguments you want to pass to your program
-    "cwd": "/home/luca/Documents/adventofcode/2022",
+    "cwd": "/home/luca/Documents/adventofcode/2025",
+    "program": "target/debug/day4",
+    "console": "integratedTerminal",
     "build": {
-      "label": "cargo build --bin day3",
+      "label": "cargo build --bin day4",
       "command": "cargo",
-      "args": ["build", "--bin", "day3"],
+      "args": ["build", "--bin", "day4"],
       "env": {
         "RUSTC_TOOLCHAIN": "/home/luca/.rustup/toolchains/1.91.1-x86_64-unknown-linux-gnu"
       },
-      "cwd": "/home/luca/Documents/adventofcode/2022",
-      "use_new_terminal": false,
-      "allow_concurrent_runs": false,
-      "reveal": "always",
-      "reveal_target": "dock",
-      "hide": "never",
+      "cwd": "/home/luca/Documents/adventofcode/2025",
       "tags": ["debug"],
-      "shell": "system",
-      "show_summary": false,
-      "show_command": false
+      "shell": "system"
     },
     "sourceLanguages": ["rust"]
   }
