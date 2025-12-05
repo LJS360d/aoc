@@ -1,4 +1,4 @@
-use std::{collections::HashMap, ops::AddAssign, thread};
+use std::{cmp::max, collections::HashMap};
 
 use regex::Regex;
 
@@ -6,188 +6,301 @@ use regex::Regex;
 /// https://adventofcode.com/2022/day/19
 fn main() {
     let input = include_str!("./input.txt");
-    part1(&input);
-    // part2(&input);
+    // part1(&input);
+    part2(&input);
 }
 
 struct Blueprint {
     id: u32,
-    /// ore
-    ore_robot_cost: u32,
-    /// ore
-    clay_robot_cost: u32,
-    /// ore, clay
-    obsidian_robot_cost: [u32; 2],
-    /// ore, obsidian
-    geode_robot_cost: [u32; 2],
+    ore_robot_ore_cost: u32,
+    clay_robot_ore_cost: u32,
+    obsidian_robot_costs: [u32; 2], // [Ore, Clay]
+    geode_robot_costs: [u32; 2],    // [Ore, Obsidian]
+
+    max_ore_needed_per_turn: u32,
+    max_clay_needed_per_turn: u32,
+    max_obsidian_needed_per_turn: u32,
 }
 
-#[derive(Eq, Hash, PartialEq, Debug)]
-enum Resource {
-    Ore,
-    Clay,
-    Obsidian,
-    Geode,
+const ORE_INDEX: usize = 0;
+const CLAY_INDEX: usize = 1;
+const OBSIDIAN_INDEX: usize = 2;
+const GEODE_INDEX: usize = 3;
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
+struct SearchState {
+    current_resources: [u32; 4], // [Ore, Clay, Obsidian, Geode]
+    robot_inventory: [u32; 4], // [Ore_Bot_Count, Clay_Bot_Count, Obsidian_Bot_Count, Geode_Bot_Count]
 }
+// Memoization cache: (Time Remaining, State) -> Max Geodes
+type StateCache = HashMap<(u32, SearchState), u32>;
 
-struct Simulation {
-    blueprint: Blueprint,
-    resources: HashMap<Resource, u32>,
-    robots: HashMap<Resource, u32>,
-}
-
-impl Simulation {
-    fn new(blueprint: Blueprint) -> Self {
-        let mut resources = HashMap::new();
-        resources.insert(Resource::Ore, 0);
-        resources.insert(Resource::Clay, 0);
-        resources.insert(Resource::Obsidian, 0);
-        resources.insert(Resource::Geode, 0);
-
-        let mut robots = HashMap::new();
-        robots.insert(Resource::Ore, 1);
-        robots.insert(Resource::Clay, 0);
-        robots.insert(Resource::Obsidian, 0);
-        robots.insert(Resource::Geode, 0);
-
-        Simulation {
-            blueprint,
-            resources,
-            robots,
-        }
+fn find_max_geodes(
+    time_remaining: u32,
+    current_state: SearchState,
+    blueprint: &Blueprint,
+    memo: &mut StateCache,
+) -> u32 {
+    if time_remaining == 0 {
+        return current_state.current_resources[GEODE_INDEX];
     }
 
-    fn produce_resources(&mut self) {
-        println!("producing {:?}", self.robots);
-        for (resource, count) in self.resources.iter_mut() {
-            *count += self.robots[resource];
-        }
-        println!("resources {:?}", self.resources)
+    if let Some(&cached_max_geodes) = memo.get(&(time_remaining, current_state)) {
+        return cached_max_geodes;
     }
 
-    /// returns a vec of bought robots, mutates the resources
-    fn spend_resources_optimally(&mut self, minute: u32, total_minutes: u32) -> Option<Resource> {
-        let mut robot_to_build = None;
+    let mut maximum_geodes_found = current_state.current_resources[GEODE_INDEX]
+        + current_state.robot_inventory[GEODE_INDEX] * time_remaining;
 
-        let current_ore = *self.resources.get(&Resource::Ore).unwrap();
-        let current_clay = *self.resources.get(&Resource::Clay).unwrap();
-        let current_obsidian = *self.resources.get(&Resource::Obsidian).unwrap();
+    // Pruning: The maximum possible geodes even with optimal building (upper bound)
+    // If the maximum potential is less than our current best, we can skip.
+    // NOTE: This check is often relative to a global max across all branches,
+    // but here we rely on the state-space reduction from resource caps.
 
-        // Prioritize building geode robots
-        if current_ore >= self.blueprint.geode_robot_cost[0]
-            && current_obsidian >= self.blueprint.geode_robot_cost[1]
-        {
-            *self.resources.get_mut(&Resource::Ore).unwrap() -= self.blueprint.geode_robot_cost[0];
-            *self.resources.get_mut(&Resource::Obsidian).unwrap() -=
-                self.blueprint.geode_robot_cost[1];
-            robot_to_build = Some(Resource::Geode);
-        } else if current_ore >= self.blueprint.obsidian_robot_cost[0]
-            && current_clay >= self.blueprint.obsidian_robot_cost[1]
-        {
-            *self.resources.get_mut(&Resource::Ore).unwrap() -=
-                self.blueprint.obsidian_robot_cost[0];
-            *self.resources.get_mut(&Resource::Clay).unwrap() -=
-                self.blueprint.obsidian_robot_cost[1];
-            robot_to_build = Some(Resource::Obsidian);
-        } else if current_ore >= self.blueprint.clay_robot_cost
-            && (current_clay < self.blueprint.obsidian_robot_cost[1])
-        {
-            *self.resources.get_mut(&Resource::Ore).unwrap() -= self.blueprint.clay_robot_cost;
-            robot_to_build = Some(Resource::Clay);
-        } else if current_ore >= self.blueprint.ore_robot_cost
-            && (current_ore < self.blueprint.clay_robot_cost
-                && current_ore < self.blueprint.obsidian_robot_cost[0]
-                && current_ore < self.blueprint.geode_robot_cost[0])
-        {
-            *self.resources.get_mut(&Resource::Ore).unwrap() -= self.blueprint.ore_robot_cost;
-            robot_to_build = Some(Resource::Ore);
+    // 1. Attempt to build a GEODE Robot (Highest Priority)
+    if current_state.current_resources[ORE_INDEX] >= blueprint.geode_robot_costs[0]
+        && current_state.current_resources[OBSIDIAN_INDEX] >= blueprint.geode_robot_costs[1]
+    {
+        let mut next_state = current_state;
+
+        // Spend resources
+        next_state.current_resources[ORE_INDEX] -= blueprint.geode_robot_costs[0];
+        next_state.current_resources[OBSIDIAN_INDEX] -= blueprint.geode_robot_costs[1];
+
+        // Resources produced in the minute of building
+        for i in 0..4 {
+            next_state.current_resources[i] += current_state.robot_inventory[i];
         }
 
-        robot_to_build
-    }
+        // Add the newly built robot
+        next_state.robot_inventory[GEODE_INDEX] += 1;
 
-    fn run_for(&mut self, minutes: u32) {
-        for minute in 1..=minutes {
-            println!("Blueprint {}: Minute {minute}", self.blueprint.id);
-            let robot = self.spend_resources_optimally(minute, minutes);
-            self.produce_resources();
-            match robot {
-                Some(resource) => self.robots.get_mut(&resource).unwrap().add_assign(1),
-                None => {}
+        maximum_geodes_found = max(
+            maximum_geodes_found,
+            find_max_geodes(time_remaining - 1, next_state, blueprint, memo),
+        );
+    } else {
+        // 2. Iterate through other non-geode build options and the 'Wait' option
+
+        // [Ore_Cost, Other_Cost, Robot_Index, Max_Cap]
+        let robot_build_options = [
+            (
+                blueprint.ore_robot_ore_cost,
+                0,
+                ORE_INDEX,
+                blueprint.max_ore_needed_per_turn,
+            ),
+            (
+                blueprint.clay_robot_ore_cost,
+                0,
+                CLAY_INDEX,
+                blueprint.max_clay_needed_per_turn,
+            ),
+            (
+                blueprint.obsidian_robot_costs[0],
+                blueprint.obsidian_robot_costs[1],
+                OBSIDIAN_INDEX,
+                blueprint.max_obsidian_needed_per_turn,
+            ),
+        ];
+
+        let mut can_afford_any_robot = false;
+
+        for &(ore_cost, other_cost, robot_type_index, max_cap) in robot_build_options.iter() {
+            // Pruning: Do not build if we have reached the production cap for this resource
+            if current_state.robot_inventory[robot_type_index] >= max_cap {
+                continue;
+            }
+
+            let other_resource_condition = match robot_type_index {
+                OBSIDIAN_INDEX => current_state.current_resources[CLAY_INDEX] >= other_cost,
+                _ => true,
+            };
+
+            // Check affordability
+            if current_state.current_resources[ORE_INDEX] >= ore_cost && other_resource_condition {
+                can_afford_any_robot = true;
+
+                let mut next_state = current_state;
+
+                // Spend resources
+                next_state.current_resources[ORE_INDEX] -= ore_cost;
+                if robot_type_index == OBSIDIAN_INDEX {
+                    next_state.current_resources[CLAY_INDEX] -= other_cost;
+                }
+
+                // Resources produced in the minute of building
+                for i in 0..4 {
+                    next_state.current_resources[i] += current_state.robot_inventory[i];
+                }
+
+                // Add the newly built robot
+                next_state.robot_inventory[robot_type_index] += 1;
+
+                maximum_geodes_found = max(
+                    maximum_geodes_found,
+                    find_max_geodes(time_remaining - 1, next_state, blueprint, memo),
+                );
             }
         }
+
+        // 3. Option to WAIT and gather resources (crucial for finding optimal path)
+
+        // We only prune the 'Wait' action if:
+        // 1. We are not saving up for the Geode robot (i.e., we have enough clay/obsidian robots).
+        // 2. Our current resources exceed the max cost for any robot that uses that resource.
+
+        let should_explore_wait = current_state.robot_inventory[OBSIDIAN_INDEX]
+            < blueprint.max_obsidian_needed_per_turn
+            || current_state.robot_inventory[CLAY_INDEX] < blueprint.max_clay_needed_per_turn
+            || current_state.robot_inventory[ORE_INDEX] < blueprint.max_ore_needed_per_turn;
+
+        if should_explore_wait || !can_afford_any_robot {
+            let mut next_state = current_state;
+            // Collect resources for 1 minute
+            for i in 0..4 {
+                next_state.current_resources[i] += current_state.robot_inventory[i];
+            }
+            // No robot built
+            maximum_geodes_found = max(
+                maximum_geodes_found,
+                find_max_geodes(time_remaining - 1, next_state, blueprint, memo),
+            );
+        }
     }
+
+    memo.insert((time_remaining, current_state), maximum_geodes_found);
+    maximum_geodes_found
 }
 
 #[allow(unused)]
 fn part1(input: &str) {
-    let mut simulations = vec![];
+    let mut blueprints = vec![];
 
     let re = Regex::new(r"Blueprint (\d+): Each ore robot costs (\d+) ore. Each clay robot costs (\d+) ore. Each obsidian robot costs (\d+) ore and (\d+) clay. Each geode robot costs (\d+) ore and (\d+) obsidian.").unwrap();
     for line in input.lines() {
         let (_, values) = re.captures(line).unwrap().extract::<7>();
         let [
             id,
-            ore_robot_cost,
-            clay_robot_cost,
-            obsidian_robot_cost_ore,
-            obsidian_robot_cost_clay,
-            geode_robot_cost_ore,
-            geode_robot_cost_obsidian,
+            ore_robot_ore_cost,
+            clay_robot_ore_cost,
+            obsidian_robot_ore_cost,
+            obsidian_robot_clay_cost,
+            geode_robot_ore_cost,
+            geode_robot_obsidian_cost,
         ] = values.map(|s| s.parse::<u32>().unwrap());
+
+        let max_ore_needed_per_turn = *[
+            ore_robot_ore_cost,
+            clay_robot_ore_cost,
+            obsidian_robot_ore_cost,
+            geode_robot_ore_cost,
+        ]
+        .iter()
+        .max()
+        .unwrap();
+
         let blueprint = Blueprint {
             id,
-            ore_robot_cost,
-            clay_robot_cost,
-            obsidian_robot_cost: [obsidian_robot_cost_ore, obsidian_robot_cost_clay],
-            geode_robot_cost: [geode_robot_cost_ore, geode_robot_cost_obsidian],
+            ore_robot_ore_cost,
+            clay_robot_ore_cost,
+            obsidian_robot_costs: [obsidian_robot_ore_cost, obsidian_robot_clay_cost],
+            geode_robot_costs: [geode_robot_ore_cost, geode_robot_obsidian_cost],
+
+            // Max production rate needed to afford any robot next turn
+            max_ore_needed_per_turn,
+            max_clay_needed_per_turn: obsidian_robot_clay_cost,
+            max_obsidian_needed_per_turn: geode_robot_obsidian_cost,
         };
-        simulations.push(Simulation::new(blueprint));
+        blueprints.push(blueprint);
     }
 
-    // Multi-threaded version
-    // let mut handles = vec![];
-    // for sim in simulations {
-    //     handles.push(thread::spawn(move || {
-    //         let mut sim = sim;
-    //         sim.run_for(24);
-    //         sim
-    //     }));
-    // }
-    // let mut final_simulations = vec![];
+    let mut acc = 0;
 
-    // for handle in handles {
-    //     match handle.join() {
-    //         Ok(sim_result) => {
-    //             final_simulations.push(sim_result);
-    //         }
-    //         Err(e) => {
-    //             eprintln!("A thread panicked and failed to join: {:?}", e);
-    //         }
-    //     }
-    // }
+    let init_state = SearchState {
+        current_resources: [0, 0, 0, 0],
+        robot_inventory: [1, 0, 0, 0],
+    };
 
-    // Sync version
-    for sim in simulations.iter_mut() {
-        sim.run_for(24);
-        println!("");
-        println!("---------------");
-        println!("");
+    for blueprint in blueprints {
+        let mut memo = HashMap::new();
+        let max_geodes = find_max_geodes(24, init_state, &blueprint, &mut memo);
+
+        let quality_level = blueprint.id * max_geodes;
+        acc += quality_level;
+
+        println!(
+            "Blueprint {}: Max Geodes = {}, Quality Level = {}",
+            blueprint.id, max_geodes, quality_level
+        );
     }
 
-    println!(
-        "{}",
-        simulations.iter().fold(0, |acc, sim| {
-            return acc + (sim.blueprint.id * sim.resources.get(&Resource::Geode).unwrap());
-        })
-    )
+    println!("{}", acc);
 }
 
 #[allow(unused)]
 fn part2(input: &str) {
-    let lines = input.lines();
+    let mut blueprints = vec![];
 
-    for line in lines {
-        let mut chars = line.chars();
+    let re = Regex::new(r"Blueprint (\d+): Each ore robot costs (\d+) ore. Each clay robot costs (\d+) ore. Each obsidian robot costs (\d+) ore and (\d+) clay. Each geode robot costs (\d+) ore and (\d+) obsidian.").unwrap();
+    for line in input.lines() {
+        let (_, values) = re.captures(line).unwrap().extract::<7>();
+        let [
+            id,
+            ore_robot_ore_cost,
+            clay_robot_ore_cost,
+            obsidian_robot_ore_cost,
+            obsidian_robot_clay_cost,
+            geode_robot_ore_cost,
+            geode_robot_obsidian_cost,
+        ] = values.map(|s| s.parse::<u32>().unwrap());
+
+        let max_ore_needed_per_turn = *[
+            ore_robot_ore_cost,
+            clay_robot_ore_cost,
+            obsidian_robot_ore_cost,
+            geode_robot_ore_cost,
+        ]
+        .iter()
+        .max()
+        .unwrap();
+
+        let blueprint = Blueprint {
+            id,
+            ore_robot_ore_cost,
+            clay_robot_ore_cost,
+            obsidian_robot_costs: [obsidian_robot_ore_cost, obsidian_robot_clay_cost],
+            geode_robot_costs: [geode_robot_ore_cost, geode_robot_obsidian_cost],
+
+            // Max production rate needed to afford any robot next turn
+            max_ore_needed_per_turn,
+            max_clay_needed_per_turn: obsidian_robot_clay_cost,
+            max_obsidian_needed_per_turn: geode_robot_obsidian_cost,
+        };
+        blueprints.push(blueprint);
+        if (blueprints.len() == 3) {
+            break;
+        }
     }
+
+    let mut acc = 1;
+
+    let init_state = SearchState {
+        current_resources: [0, 0, 0, 0],
+        robot_inventory: [1, 0, 0, 0],
+    };
+
+    for blueprint in blueprints {
+        let mut memo = HashMap::new();
+        let max_geodes = find_max_geodes(32, init_state, &blueprint, &mut memo);
+
+        acc *= max_geodes;
+
+        println!(
+            "Blueprint {}: Max Geodes = {}",
+            blueprint.id, max_geodes
+        );
+    }
+
+    println!("{}", acc);
 }
