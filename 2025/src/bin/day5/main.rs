@@ -1,4 +1,4 @@
-use std::cmp::Ordering;
+use std::cmp;
 
 /// Advent of Code 2025 - Day 5
 /// https://adventofcode.com/2025/day/5
@@ -31,76 +31,35 @@ fn part1(input: &str) {
     println!("{}", sum);
 }
 
-#[derive(Clone, Copy, Debug)]
-enum Bound {
-    Left(u64),
-    Right(u64),
-}
-
 #[allow(unused)]
 fn part2(input: &str) {
     let (ranges, _) = input.split_once("\n\n").unwrap();
-    let mut min = u64::MAX;
-    let mut max = 0_u64;
-    let mut fresh_ids_bounds = Vec::<Bound>::new();
+    let mut intervals = Vec::<(u64, u64)>::new();
     for line in ranges.lines() {
         let (left, right) = line
             .split_once("-")
             .map(|(f, t)| (f.parse::<u64>().unwrap(), t.parse::<u64>().unwrap()))
             .unwrap();
-        fresh_ids_bounds.push(Bound::Left(left));
-        fresh_ids_bounds.push(Bound::Right(right));
-        if right > max {
-            max = right
-        }
-        if left < min {
-            min = left
-        }
+        intervals.push((left, right));
     }
-    fresh_ids_bounds.sort_unstable_by(|a_bnd, b_bnd| {
-        let a = match a_bnd {
-            Bound::Left(val) => val,
-            Bound::Right(val) => val,
-        };
-        let b = match b_bnd {
-            Bound::Left(val) => val,
-            Bound::Right(val) => val,
-        };
-
-        if a > b {
-            return Ordering::Greater;
-        } else if a < b {
-            return Ordering::Less;
-        }
-        return Ordering::Equal;
-    });
-    // identify holes
-    let mut holes = Vec::<(u64, u64)>::new();
-    for (i, curr) in fresh_ids_bounds.iter().enumerate() {
-        if i == 0 || i == fresh_ids_bounds.len() - 1 {
-            continue;
-        }
-        let prev = fresh_ids_bounds[i - 1];
-        let next = fresh_ids_bounds[i + 1];
-
-        if let Bound::Left(curr_value) = curr {
-            if let Bound::Left(_) = next {
-                // theres a hole that goes from "prev" to "curr"
-                let Bound::Right(prev_value) = prev else {
-                    unreachable!()
-                };
-
-                holes.push((prev_value, *curr_value));
-            }
+    intervals.sort_unstable_by(|a, b| a.0.cmp(&b.0));
+    let mut merged = Vec::<(u64, u64)>::new();
+    merged.push(intervals[0]);
+    for curr in intervals.iter().skip(1) {
+        let last_merged = merged.last_mut().unwrap();
+        let curr_start = curr.0;
+        let curr_end = curr.1;
+        let last_merged_end = last_merged.1;
+        if curr_start <= last_merged_end.checked_add(1).unwrap_or(u64::MAX) {
+            last_merged.1 = cmp::max(last_merged_end, curr_end);
+        } else {
+            merged.push(*curr);
         }
     }
 
-    let mut res = max - min;
-    println!("{:?}", fresh_ids_bounds);
-    println!("{:?}", holes);
-    for hole in holes.iter() {
-        res -= (hole.1 - hole.0)
+    let mut sum = 0;
+    for interval in merged {
+        sum += interval.1 - interval.0 + 1;
     }
-
-    println!("{:?}", res);
+    println!("{}", sum);
 }
