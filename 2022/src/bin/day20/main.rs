@@ -8,51 +8,84 @@ fn main() {
     // part2(&input);
 }
 
-fn mixing(nums: VecDeque<i32>) -> VecDeque<i32> {
-    let mut result = nums.clone();
-    let wrap = nums.len() as i32 - 1;
-    for num in nums.into_iter() {
-        if num == 0 {
+fn mixing(initial_nums_with_indices: VecDeque<(i64, usize)>) -> VecDeque<(i64, usize)> {
+    let mut current_state = initial_nums_with_indices.clone();
+
+    for (original_val, original_idx) in initial_nums_with_indices.into_iter() {
+        // Find the current position of the number (original_val, original_idx)
+        let (current_pos, _) = current_state
+            .iter()
+            .enumerate()
+            .find(|(_, (val, idx))| *val == original_val && *idx == original_idx)
+            .unwrap();
+
+        let moved_num_data = current_state.remove(current_pos).unwrap();
+        let move_value = moved_num_data.0;
+        let current_len_after_removal = current_state.len() as i64;
+
+        if move_value == 0 {
+            current_state.insert(current_pos, moved_num_data);
             continue;
         }
-        let i = result.iter().position(|n| *n == num).unwrap();
-        let mut new_index = (i as i32 + num) % wrap;
-        if new_index < 0 {
-            new_index += wrap;
+
+        let mut new_pos = (current_pos as i64 + move_value) % current_len_after_removal;
+
+        // Ensure new_pos is non-negative
+        if new_pos < 0 {
+            new_pos += current_len_after_removal;
         }
-        if new_index == 0 {
-            new_index = wrap;
-        }
-        let new_index = new_index as usize;
-        result.remove(i);
-        result.insert(new_index, num);
-        // println!("{:?}", result);
+
+        current_state.insert(new_pos as usize, moved_num_data);
     }
-    result
+    current_state
 }
 
 #[allow(unused)]
 fn part1(input: &str) {
-    let mut nums: VecDeque<i32> = VecDeque::new();
-    for line in input.lines() {
-        nums.push_back(line.parse::<i32>().unwrap());
+    let mut nums_with_indices: VecDeque<(i64, usize)> = VecDeque::new();
+    for (i, line) in input.lines().enumerate() {
+        nums_with_indices.push_back((line.parse::<i64>().unwrap(), i));
     }
-    let wrap = nums.len();
-    // println!("{:?}", nums);
-    let mixed = mixing(nums.clone());
-    let (zero_index, _) = mixed.iter().enumerate().find(|(i, n)| **n == 0).unwrap();
-    let i1k = (zero_index + 1000) % wrap;
-    let i2k = (zero_index + 2000) % wrap;
-    let i3k = (zero_index + 3000) % wrap;
-    let sum = mixed[i1k] + mixed[i2k] + mixed[i3k];
+
+    let num_elements_total = nums_with_indices.len();
+    let mixed_with_indices = mixing(nums_with_indices.clone());
+
+    let (zero_index_in_mixed, _) = mixed_with_indices
+        .iter()
+        .enumerate()
+        .find(|(_, (n_val, _))| *n_val == 0)
+        .unwrap();
+
+    let i1k = (zero_index_in_mixed + 1000) % num_elements_total;
+    let i2k = (zero_index_in_mixed + 2000) % num_elements_total;
+    let i3k = (zero_index_in_mixed + 3000) % num_elements_total;
+
+    let sum = mixed_with_indices[i1k].0 + mixed_with_indices[i2k].0 + mixed_with_indices[i3k].0;
     println!("{}", sum);
 }
 
 #[allow(unused)]
 fn part2(input: &str) {
-    let lines = input.lines();
+    const ENC_KEY: i64 = 811589153;
 
-    for line in lines {
-        let mut chars = line.chars();
+    let mut nums_with_indices: VecDeque<(i64, usize)> = VecDeque::new();
+    for (i, line) in input.lines().enumerate() {
+        nums_with_indices.push_back((line.parse::<i64>().unwrap(), i));
     }
+
+    let num_elements_total = nums_with_indices.len();
+    let mixed_with_indices = mixing(nums_with_indices.clone());
+
+    let (zero_index_in_mixed, _) = mixed_with_indices
+        .iter()
+        .enumerate()
+        .find(|(_, (n_val, _))| *n_val == 0)
+        .unwrap();
+
+    let i1k = (zero_index_in_mixed + 1000) % num_elements_total;
+    let i2k = (zero_index_in_mixed + 2000) % num_elements_total;
+    let i3k = (zero_index_in_mixed + 3000) % num_elements_total;
+
+    let sum = mixed_with_indices[i1k].0 + mixed_with_indices[i2k].0 + mixed_with_indices[i3k].0;
+    println!("{}", sum);
 }

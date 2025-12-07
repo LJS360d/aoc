@@ -6,15 +6,15 @@
   {
     "request": "launch",
     "adapter": "CodeLLDB",
-    "label": "Debug day4",
+    "label": "Debug day7",
     "args": [], // Any command-line arguments you want to pass to your program
     "cwd": "/home/luca/Documents/adventofcode/2025",
-    "program": "target/debug/day4",
+    "program": "target/debug/day7",
     "console": "integratedTerminal",
     "build": {
-      "label": "cargo build --bin day4",
+      "label": "cargo build --bin day7",
       "command": "cargo",
-      "args": ["build", "--bin", "day4"],
+      "args": ["build", "--bin", "day7"],
       "env": {
         "RUSTC_TOOLCHAIN": "/home/luca/.rustup/toolchains/1.91.1-x86_64-unknown-linux-gnu"
       },
