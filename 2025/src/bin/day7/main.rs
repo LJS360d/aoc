@@ -1,4 +1,4 @@
-use std::collections::{HashMap, HashSet};
+use std::{cmp::max, collections::HashSet};
 
 /// Advent of Code 2022 - Day 14
 /// https://adventofcode.com/2022/day/14
@@ -75,35 +75,35 @@ fn part1(input: &str) {
     println!("{splits}")
 }
 
-fn timelines(
-    current_beams: &HashSet<Coords>,
-    current_processing_pos: Coords,
-    grid: &Vec<Vec<char>>,
-    memo: &mut HashMap<(Vec<Coords>, Coords), u32>,
-) -> u32 {
-    todo!()
-}
-
 #[allow(unused)]
 fn part2(input: &str) {
-    let grid: Vec<Vec<char>> = input.lines().map(|line| line.chars().collect()).collect();
-    let max_row = grid.len();
-    let max_col = grid[0].len();
+    let grid_height = input.lines().count();
+    let grid_width = input.lines().next().unwrap().len();
+    let mut grid: Vec<Vec<u64>> = Vec::new();
+    let mut default_col = Vec::with_capacity(grid_width);
+    default_col.resize(grid_width, 0);
+    grid.resize(grid_height, default_col);
 
-    let mut start_s_pos = Coords { row: 0, col: 0 };
-    'outer: for r in 0..max_row {
-        for c in 0..max_col {
-            if grid[r][c] == 'S' {
-                start_s_pos = Coords { row: r, col: c };
-                break 'outer;
+    for (y, line) in input.lines().enumerate() {
+        for (x, ch) in line.chars().enumerate() {
+            if ch == 'S' {
+                grid[y][x] = 1;
+                continue;
+            }
+
+            if ch == '.' && y as isize - 1 >= 0 {
+                grid[y][x] += grid[y - 1][x];
+                continue;
+            }
+
+            if ch == '^' {
+                for j in [-1_isize, 1_isize] {
+                    let new_col = (x as isize + j) as usize;
+                    grid[y][new_col] = max(grid[y - 1][x] + grid[y][new_col], grid[y][new_col]);
+                }
             }
         }
     }
 
-    let init_beam: HashSet<Coords> = vec![start_s_pos.under()].into_iter().collect();
-    let mut memo = HashMap::new();
-
-    let total_timelines = timelines(&init_beam, Coords { row: 0, col: 0 }, &grid, &mut memo);
-
-    println!("{}", total_timelines + 1);
+    println!("{}", grid[grid_height - 1].iter().sum::<u64>())
 }
