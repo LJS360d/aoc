@@ -81,15 +81,22 @@ fn part1(input: &str) {
             match elf.dest {
                 None => continue,
                 Some(dest) => {
-                    if !elves_with_dest.iter().any(|&ce| ce.dest.unwrap() == dest) {
+                    if !elves_with_dest
+                        .iter()
+                        .any(|&ce| ce.dest.unwrap() == dest && ce.pos != elf.pos)
+                    {
+                        // println!(
+                        //     "Elf {},{} moving to {},{}",
+                        //     elf.pos.0, elf.pos.1, dest.0, dest.1
+                        // );
                         elf.pos = dest;
-                        println!("Elf moving to {},{}", dest.0, dest.1)
                     }
                 }
             }
         }
     }
 
+    visualize(&elves);
     println!("{}", count_ground(&elves))
 }
 
@@ -107,6 +114,33 @@ fn count_ground(elves: &Vec<Elf>) -> i32 {
     let width = max_col - min_col;
     let height = max_row - min_row;
     (width * height) - elves.len() as i32
+}
+
+fn visualize(elves: &Vec<Elf>) {
+    let (min_row, max_row) = elves.iter().fold((i32::MAX, i32::MIN), |(min, max), elf| {
+        let new_min = std::cmp::min(min, elf.pos.0);
+        let new_max = std::cmp::max(max, elf.pos.0);
+        (new_min, new_max)
+    });
+    let (min_col, max_col) = elves.iter().fold((i32::MAX, i32::MIN), |(min, max), elf| {
+        let new_min = std::cmp::min(min, elf.pos.1);
+        let new_max = std::cmp::max(max, elf.pos.1);
+        (new_min, new_max)
+    });
+    let width = max_col - min_col;
+    let height = max_row - min_row;
+    let mut grid = vec![vec!['.'; width as usize + 1]; height as usize + 1];
+    for elf in elves {
+        let row = elf.pos.0 - min_row;
+        let col = elf.pos.1 - min_col;
+        grid[row as usize][col as usize] = '#';
+    }
+    for row in 0..height {
+        for col in 0..width {
+            print!("{}", grid[row as usize][col as usize]);
+        }
+        println!();
+    }
 }
 
 #[allow(unused)]
