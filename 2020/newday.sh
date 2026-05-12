@@ -22,10 +22,14 @@ end
 input = Path.join([__DIR__, "input.txt"]) |> File.read!()
 
 # part 1
-Aoc$year.Day1.part1(input) |> IO.inspect()
+{time, res1} = :timer.tc(fn -> Aoc$year.Day1.part1(input) end)
+IO.inspect(res1)
+IO.puts("Part 1 solved in: #{time}µs\n")
 
 # part 2
-Aoc$year.Day1.part2(input) |> IO.inspect()
+{time, res2} = :timer.tc(fn -> Aoc$year.Day1.part2(input) end)
+IO.inspect(res2)
+IO.puts("Part 2 solved in: #{time}µs")
 
 EOF
 }
