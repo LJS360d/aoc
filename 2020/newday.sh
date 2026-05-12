@@ -8,12 +8,12 @@ boilerplate_code() {
 # https://adventofcode.com/$year/day/${1}
 defmodule Aoc$year.Day1 do
   @spec part1(String.t()) :: integer()
-  def part1(input) do
+  def part1(_input) do
     0
   end
 
   @spec part2(String.t()) :: integer()
-  def part2(input) do
+  def part2(_input) do
     0
   end
 end
