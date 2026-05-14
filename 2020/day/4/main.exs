@@ -1,6 +1,6 @@
 # Advent of Code 2020 - Day 4
 # https://adventofcode.com/2020/day/4
-defmodule Aoc2020.Day1 do
+defmodule Aoc2020.Day4 do
   @spec part1(String.t()) :: integer()
   def part1(input) do
     input
@@ -67,11 +67,11 @@ end
 input = Path.join([__DIR__, "input.txt"]) |> File.read!()
 
 # part 1
-{time, res1} = :timer.tc(fn -> Aoc2020.Day1.part1(input) end)
+{time, res1} = :timer.tc(fn -> Aoc2020.Day4.part1(input) end)
 IO.inspect(res1)
 IO.puts("Part 1 solved in: #{time}µs\n")
 
 # part 2
-{time, res2} = :timer.tc(fn -> Aoc2020.Day1.part2(input) end)
+{time, res2} = :timer.tc(fn -> Aoc2020.Day4.part2(input) end)
 IO.inspect(res2)
 IO.puts("Part 2 solved in: #{time}µs")

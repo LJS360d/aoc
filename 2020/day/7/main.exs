@@ -1,6 +1,6 @@
 # Advent of Code 2020 - Day 7
 # https://adventofcode.com/2020/day/7
-defmodule Aoc2020.Day1 do
+defmodule Aoc2020.Day7 do
   @target "shiny gold"
 
   @spec part1(String.t()) :: integer()
@@ -51,12 +51,12 @@ end
 input = Path.join([__DIR__, "input.txt"]) |> File.read!()
 
 # part 1
-{time, res1} = :timer.tc(fn -> Aoc2020.Day1.part1(input) end)
+{time, res1} = :timer.tc(fn -> Aoc2020.Day7.part1(input) end)
 IO.inspect(res1)
 IO.puts("Part 1 solved in: #{time}µs\n")
 
 # part 2
-{time, res2} = :timer.tc(fn -> Aoc2020.Day1.part2(input) end)
+{time, res2} = :timer.tc(fn -> Aoc2020.Day7.part2(input) end)
 IO.inspect(res2)
 IO.puts("Part 2 solved in: #{time}µs")
 # 184295 too high
