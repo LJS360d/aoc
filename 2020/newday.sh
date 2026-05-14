@@ -44,6 +44,7 @@ next_day=${1:-$next_day}
 day_dir="day/${next_day}"
 main_file="${day_dir}/main.exs"
 input_file="${day_dir}/input.txt"
+test_input_file="${day_dir}/test_input.txt"
 
 # Create directories and files
 mkdir -p "$day_dir"
@@ -61,6 +62,7 @@ else
     curl -s -o "$input_file" --cookie "session=$session" "https://adventofcode.com/$year/day/$next_day/input"
     if [[ -s "$input_file" ]]; then
         echo "Input file downloaded successfully: ${input_file}"
+        touch "$test_input_file"
     else
         echo "Warning: Failed to download input file or file is empty. Check your session and permissions."
     fi
