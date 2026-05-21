@@ -21,6 +21,7 @@ erl_crash.dump
 
 # Ignore package tarball (built via "mix hex.build").
 .elixir_ls
+.expert
 
 input.txt
 test_input.txt
