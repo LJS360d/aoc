@@ -78,7 +78,6 @@ defmodule Aoc2020.Day16 do
       |> eliminate_all()
 
     Enum.zip(fields, your_ticket)
-    |> IO.inspect()
     |> Enum.filter(fn {k, _} -> String.starts_with?(k, "departure") end)
     |> Enum.reduce(1, fn {_, v}, acc -> v * acc end)
   end
