@@ -1,6 +1,6 @@
 #!/bin/bash
 session=53616c7465645f5f88cecc4ef160bd6cc03c277309d7097180cac1e7fa2051e4aabc83fe99f75d49fa4a94ab8337232dd62ee2456237664ca94f7a7a14516644
-year=2021
+year=2019
 # Boilerplate code
 boilerplate_code() {
     cat <<EOF
