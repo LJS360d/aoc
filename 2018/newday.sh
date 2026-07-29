@@ -7,8 +7,22 @@ boilerplate_code() {
 # Advent of Code $year - Day ${1}
 # https://adventofcode.com/$year/day/${1}
 defmodule Aoc$year.Day${1} do
+  def run do
+    input = Path.join([__DIR__, "input.txt"]) |> File.read!()
+    
+    # part 1
+    {time, res1} = :timer.tc(fn -> Aoc$year.Day${1}.part1(input) end)
+    IO.inspect(res1)
+    IO.puts("Part 1 solved in: #{time}µs\n")
+    
+    # part 2
+    {time, res2} = :timer.tc(fn -> Aoc$year.Day${1}.part2(input) end)
+    IO.inspect(res2)
+    IO.puts("Part 2 solved in: #{time}µs")
+  end
+    
   @spec part1(String.t()) :: integer()
-  def part1(_input) do
+  def part1(input) do
     0
   end
 
@@ -18,18 +32,11 @@ defmodule Aoc$year.Day${1} do
   end
 end
 
-# runner
-input = Path.join([__DIR__, "input.txt"]) |> File.read!()
-
-# part 1
-{time, res1} = :timer.tc(fn -> Aoc$year.Day${1}.part1(input) end)
-IO.inspect(res1)
-IO.puts("Part 1 solved in: #{time}µs\n")
-
-# part 2
-{time, res2} = :timer.tc(fn -> Aoc$year.Day${1}.part2(input) end)
-IO.inspect(res2)
-IO.puts("Part 2 solved in: #{time}µs")
+unless Code.ensure_loaded?(IEx) and IEx.started?() do
+  if length(System.argv()) >= 0 do
+    Aoc${year}.Day${1}.run()
+  end
+end
 
 EOF
 }
@@ -42,7 +49,7 @@ highest_day=${highest_day:-0}
 next_day=$((highest_day + 1))
 next_day=${1:-$next_day}
 day_dir="day/${next_day}"
-main_file="${day_dir}/main.exs"
+main_file="${day_dir}/main.ex"
 input_file="${day_dir}/input.txt"
 test_input_file="${day_dir}/test_input.txt"
 
