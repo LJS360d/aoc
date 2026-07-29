@@ -6,13 +6,13 @@
   "disable_ai": true,
   "languages": {
     "Elixir": {
-      "language_servers": ["expert", "!elixir-ls", "!next-ls", "!lexical", "..."],
+      "language_servers": ["expert", "!dexter", "!elixir-ls", "!next-ls", "!lexical", "..."],
     },
     "EEx": {
-      "language_servers": ["expert", "!elixir-ls", "!next-ls", "!lexical", "..."],
+      "language_servers": ["expert", "!dexter", "!elixir-ls", "!next-ls", "!lexical", "..."],
     },
     "HEEx": {
-      "language_servers": ["expert", "!elixir-ls", "!next-ls", "!lexical", "..."],
+      "language_servers": ["expert", "!dexter", "!elixir-ls", "!next-ls", "!lexical", "..."],
     },
   },
   "lsp": {
