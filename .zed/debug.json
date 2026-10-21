@@ -1,0 +1,43 @@
+// Project-local debug tasks
+//
+// For more documentation on how to configure debug tasks,
+// see: https://zed.dev/docs/debugger
+[
+  {
+    "label": "Debug Swift / C++ / Rust File (CodeLLDB)",
+    "adapter": "lldb",
+    "request": "launch",
+    "program": "${fileDirname}/${fileBasenameNoExtension}",
+    "preLaunchTask": "Compile Current Script",
+    "cwd": "${fileDirname}",
+    "stopOnEntry": false
+  },
+  {
+    "label": "Debug Python Script (debugpy)",
+    "adapter": "python",
+    "request": "launch",
+    "program": "${file}",
+    "args": [],
+    "console": "integratedTerminal",
+    "cwd": "${fileDirname}"
+  },
+  {
+    "label": "Debug JavaScript / TypeScript (Node/Bun)",
+    "adapter": "node",
+    "request": "launch",
+    "name": "Launch Program",
+    "program": "${file}",
+    "cwd": "${fileDirname}",
+    "runtimeExecutable": "bun",
+    "console": "integratedTerminal"
+  },
+  {
+    "label": "Debug Go Script (Delve)",
+    "adapter": "delve",
+    "request": "launch",
+    "mode": "exec",
+    "program": "${fileDirname}/${fileBasenameNoExtension}",
+    "preLaunchTask": "Compile Go Binary",
+    "cwd": "${fileDirname}"
+  }
+]
